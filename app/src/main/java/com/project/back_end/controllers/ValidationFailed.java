@@ -1,28 +1,35 @@
 package com.project.back_end.controllers;
 
-import org.springframework.http.HttpStatus;
+import com.project.back_end.services.CoreService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.validation.FieldError;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDateTime;
 
-@RestControllerAdvice
+/**
+ * Validation utility endpoints.
+ * (Named 'ValidationFailedController' per request; typically would be 'ValidationController')
+ */
+@RestController
+@RequestMapping("/api/validate")
 public class ValidationFailed {
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationException(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        
-        // Iterate through all the validation errors
-        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            String errorMessage = error.getDefaultMessage();
-            errors.put("message", "" + errorMessage);
-        }
+    private final CoreService coreService;
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+    public ValidationFailed(CoreService coreService) {
+        this.coreService = coreService;
+    }
+
+    @GetMapping("/appointment-slot")
+    public ResponseEntity<Integer> validateSlot(@RequestParam Long doctorId,
+                                                @RequestParam String dateTimeIso) {
+        LocalDateTime time = LocalDateTime.parse(dateTimeIso);
+        return ResponseEntity.ok(coreService.validateAppointment(doctorId, time));
+    }
+
+    @GetMapping("/patient-unique")
+    public ResponseEntity<Boolean> patientUnique(@RequestParam(required = false) String email,
+                                                 @RequestParam(required = false) String phone) {
+        return ResponseEntity.ok(coreService.validatePatient(email, phone));
     }
 }

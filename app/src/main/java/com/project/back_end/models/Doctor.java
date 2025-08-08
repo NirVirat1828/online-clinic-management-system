@@ -1,65 +1,217 @@
 package com.project.back_end.models;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+
+import java.util.Objects;
+
+/**
+ * Doctor entity mapped to the `doctors` table as defined in schema-design.md.
+ *
+ * Schema Reference (doctors):
+ *  - id (PK, AUTO_INCREMENT)
+ *  - first_name (VARCHAR(50), NOT NULL)
+ *  - last_name (VARCHAR(50), NOT NULL)
+ *  - specialty (VARCHAR(100), NOT NULL)
+ *  - phone (VARCHAR(20), NOT NULL, UNIQUE)
+ *  - email (VARCHAR(100), NOT NULL, UNIQUE)
+ *  - clinic_location_id (FK → clinic_locations.id)  (nullable per schema line: not marked NOT NULL)
+ *  - active (BOOLEAN, NOT NULL, DEFAULT TRUE)
+ */
+@Entity
+@Table(
+        name = "doctors",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_doctor_phone", columnNames = "phone"),
+                @UniqueConstraint(name = "uk_doctor_email", columnNames = "email")
+        }
+)
 public class Doctor {
 
-// @Entity annotation:
-//    - Marks the class as a JPA entity, meaning it represents a table in the database.
-//    - Required for persistence frameworks (e.g., Hibernate) to map the class to a database table.
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-// 1. 'id' field:
-//    - Type: private Long
-//    - Description:
-//      - Represents the unique identifier for each doctor.
-//      - The @Id annotation marks it as the primary key.
-//      - The @GeneratedValue(strategy = GenerationType.IDENTITY) annotation auto-generates the ID value when a new record is inserted into the database.
+    @NotBlank
+    @Size(max = 50)
+    @Column(name = "first_name", nullable = false, length = 50)
+    private String firstName;
 
-// 2. 'name' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the doctor's name.
-//      - The @NotNull annotation ensures that the doctor's name is required.
-//      - The @Size(min = 3, max = 100) annotation ensures that the name length is between 3 and 100 characters. 
-//      - Provides validation for correct input and user experience.
+    @NotBlank
+    @Size(max = 50)
+    @Column(name = "last_name", nullable = false, length = 50)
+    private String lastName;
 
+    @NotBlank
+    @Size(max = 100)
+    @Column(name = "specialty", nullable = false, length = 100)
+    private String specialty;
 
-// 3. 'specialty' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the medical specialty of the doctor.
-//      - The @NotNull annotation ensures that a specialty must be provided.
-//      - The @Size(min = 3, max = 50) annotation ensures that the specialty name is between 3 and 50 characters long.
+    @NotBlank
+    @Size(max = 20)
+    @Pattern(regexp = "^[+0-9()\\-\\s]{7,20}$",
+            message = "Phone number must contain only digits and common phone symbols, length 7–20.")
+    @Column(name = "phone", nullable = false, length = 20)
+    private String phone;
 
-// 4. 'email' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the doctor's email address.
-//      - The @NotNull annotation ensures that an email address is required.
-//      - The @Email annotation validates that the email address follows a valid email format (e.g., doctor@example.com).
+    @NotBlank
+    @Email
+    @Size(max = 100)
+    @Column(name = "email", nullable = false, length = 100)
+    private String email;
 
-// 5. 'password' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the doctor's password for login authentication.
-//      - The @NotNull annotation ensures that a password must be provided.
-//      - The @Size(min = 6) annotation ensures that the password must be at least 6 characters long.
-//      - The @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) annotation ensures that the password is not serialized in the response (hidden from the frontend).
+    /**
+     * Many doctors can belong to one clinic location.
+     * The schema does not mark clinic_location_id as NOT NULL, so it is optional here.
+     *
+     * If you create a ClinicLocation entity, ensure its @Entity name/table matches `clinic_locations`.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "clinic_location_id",
+            foreignKey = @ForeignKey(name = "fk_doctor_clinic_location"))
+    private ClinicLocation clinicLocation;
 
-// 6. 'phone' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the doctor's phone number.
-//      - The @NotNull annotation ensures that a phone number must be provided.
-//      - The @Pattern(regexp = "^[0-9]{10}$") annotation validates that the phone number must be exactly 10 digits long.
+    @NotNull
+    @Column(name = "active", nullable = false)
+    private Boolean active = Boolean.TRUE;
 
-// 7. 'availableTimes' field:
-//    - Type: private List<String>
-//    - Description:
-//      - Represents the available times for the doctor in a list of time slots.
-//      - Each time slot is represented as a string (e.g., "09:00-10:00", "10:00-11:00").
-//      - The @ElementCollection annotation ensures that the list of time slots is stored as a separate collection in the database.
+    // Constructors
+    public Doctor() {
+    }
 
-// 8. Getters and Setters:
-//    - Standard getter and setter methods are provided for all fields: id, name, specialty, email, password, phone, and availableTimes.
+    public Doctor(String firstName,
+                  String lastName,
+                  String specialty,
+                  String phone,
+                  String email,
+                  ClinicLocation clinicLocation,
+                  Boolean active) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.specialty = specialty;
+        this.phone = phone;
+        this.email = email;
+        this.clinicLocation = clinicLocation;
+        this.active = active != null ? active : Boolean.TRUE;
+    }
 
+    // Convenience constructor without clinic location
+    public Doctor(String firstName,
+                  String lastName,
+                  String specialty,
+                  String phone,
+                  String email) {
+        this(firstName, lastName, specialty, phone, email, null, Boolean.TRUE);
+    }
+
+    // Getters & Setters
+
+    public Long getId() {
+        return id;
+    }
+
+    public Doctor setId(Long id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public Doctor setFirstName(String firstName) {
+        this.firstName = firstName;
+        return this;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public Doctor setLastName(String lastName) {
+        this.lastName = lastName;
+        return this;
+    }
+
+    public String getSpecialty() {
+        return specialty;
+    }
+
+    public Doctor setSpecialty(String specialty) {
+        this.specialty = specialty;
+        return this;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public Doctor setPhone(String phone) {
+        this.phone = phone;
+        return this;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public Doctor setEmail(String email) {
+        this.email = email;
+        return this;
+    }
+
+    public ClinicLocation getClinicLocation() {
+        return clinicLocation;
+    }
+
+    public Doctor setClinicLocation(ClinicLocation clinicLocation) {
+        this.clinicLocation = clinicLocation;
+        return this;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public Doctor setActive(Boolean active) {
+        this.active = active;
+        return this;
+    }
+
+    // Derived / convenience methods
+
+    @Transient
+    public String getFullName() {
+        return (firstName == null ? "" : firstName.trim()) +
+                " " +
+                (lastName == null ? "" : lastName.trim());
+    }
+
+    // equals & hashCode based on id (entity identity)
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Doctor doctor)) return false;
+        return id != null && Objects.equals(id, doctor.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31;
+    }
+
+    // toString (avoid loading lazy relations)
+    @Override
+    public String toString() {
+        return "Doctor{" +
+                "id=" + id +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", specialty='" + specialty + '\'' +
+                ", phone='" + phone + '\'' +
+                ", email='" + email + '\'' +
+                ", active=" + active +
+                (clinicLocation != null ? ", clinicLocationId=" + clinicLocation.getId() : "") +
+                '}';
+    }
 }
-

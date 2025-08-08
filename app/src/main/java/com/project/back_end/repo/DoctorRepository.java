@@ -1,39 +1,54 @@
 package com.project.back_end.repo;
 
-public interface DoctorRepository {
-   // 1. Extend JpaRepository:
-//    - The repository extends JpaRepository<Doctor, Long>, which gives it basic CRUD functionality.
-//    - This allows the repository to perform operations like save, delete, update, and find without needing to implement these methods manually.
-//    - JpaRepository also includes features like pagination and sorting.
+import com.project.back_end.models.Doctor;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
-// Example: public interface DoctorRepository extends JpaRepository<Doctor, Long> {}
+import java.util.List;
+import java.util.Optional;
 
-// 2. Custom Query Methods:
+/**
+ * Repository for Doctor entities.
+ *
+ * Search utilities included for:
+ *  - Email lookup
+ *  - Name fragments (first or last)
+ *  - Specialty (case-insensitive)
+ *  - Combined filtering (name + specialty)
+ */
+@Repository
+public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
-//    - **findByEmail**:
-//      - This method retrieves a Doctor by their email.
-//      - Return type: Doctor
-//      - Parameters: String email
+    Optional<Doctor> findByEmail(String email);
 
-//    - **findByNameLike**:
-//      - This method retrieves a list of Doctors whose name contains the provided search string (case-sensitive).
-//      - The `CONCAT('%', :name, '%')` is used to create a pattern for partial matching.
-//      - Return type: List<Doctor>
-//      - Parameters: String name
+    Optional<Doctor> findByPhone(String phone);
 
-//    - **findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase**:
-//      - This method retrieves a list of Doctors where the name contains the search string (case-insensitive) and the specialty matches exactly (case-insensitive).
-//      - It combines both fields for a more specific search.
-//      - Return type: List<Doctor>
-//      - Parameters: String name, String specialty
+    List<Doctor> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(String firstFragment,
+                                                                                   String lastFragment);
 
-//    - **findBySpecialtyIgnoreCase**:
-//      - This method retrieves a list of Doctors with the specified specialty, ignoring case sensitivity.
-//      - Return type: List<Doctor>
-//      - Parameters: String specialty
+    List<Doctor> findBySpecialtyIgnoreCase(String specialty);
 
-// 3. @Repository annotation:
-//    - The @Repository annotation marks this interface as a Spring Data JPA repository.
-//    - Spring Data JPA automatically implements this repository, providing the necessary CRUD functionality and custom queries defined in the interface.
+    List<Doctor> findByActiveTrue();
 
+    List<Doctor> findByClinicLocation_Id(Long clinicLocationId);
+
+    boolean existsByEmail(String email);
+
+    boolean existsByPhone(String phone);
+
+    /**
+     * Flexible filter combining partial name and specialty (both optional).
+     * Pass null or empty string to skip a criterion.
+     */
+    @Query("""
+           SELECT d
+           FROM Doctor d
+           WHERE (:name IS NULL OR :name = '' OR 
+                 LOWER(d.firstName) LIKE LOWER(CONCAT('%', :name, '%')) OR
+                 LOWER(d.lastName)  LIKE LOWER(CONCAT('%', :name, '%')))
+             AND (:specialty IS NULL OR :specialty = '' OR LOWER(d.specialty) = LOWER(:specialty))
+             AND (:activeOnly = false OR d.active = true)
+           """)
+    List<Doctor> flexibleSearch(String name, String specialty, boolean activeOnly);
 }

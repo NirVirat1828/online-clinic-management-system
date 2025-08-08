@@ -1,45 +1,216 @@
 package com.project.back_end.services;
 
+import com.project.back_end.DTO.AppointmentCreateRequest;
+import com.project.back_end.DTO.AppointmentDTO;
+import com.project.back_end.DTO.AppointmentStatusUpdateRequest;
+import com.project.back_end.DTO.AppointmentUpdateRequest;
+import com.project.back_end.mappers.AppointmentMapper;
+import com.project.back_end.models.Appointment;
+import com.project.back_end.models.ClinicLocation;
+import com.project.back_end.models.Doctor;
+import com.project.back_end.models.Patient;
+import com.project.back_end.repo.AppointmentRepository;
+import com.project.back_end.repo.ClinicLocationRepository;
+import com.project.back_end.repo.DoctorRepository;
+import com.project.back_end.repo.PatientRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
+
+/**
+ * Core appointment booking / modification logic.
+ */
+@Service
+@Transactional(readOnly = true)
 public class AppointmentService {
-// 1. **Add @Service Annotation**:
-//    - To indicate that this class is a service layer class for handling business logic.
-//    - The `@Service` annotation should be added before the class declaration to mark it as a Spring service component.
-//    - Instruction: Add `@Service` above the class definition.
 
-// 2. **Constructor Injection for Dependencies**:
-//    - The `AppointmentService` class requires several dependencies like `AppointmentRepository`, `Service`, `TokenService`, `PatientRepository`, and `DoctorRepository`.
-//    - These dependencies should be injected through the constructor.
-//    - Instruction: Ensure constructor injection is used for proper dependency management in Spring.
+    private final AppointmentRepository appointmentRepository;
+    private final DoctorRepository doctorRepository;
+    private final PatientRepository patientRepository;
+    private final ClinicLocationRepository clinicLocationRepository;
 
-// 3. **Add @Transactional Annotation for Methods that Modify Database**:
-//    - The methods that modify or update the database should be annotated with `@Transactional` to ensure atomicity and consistency of the operations.
-//    - Instruction: Add the `@Transactional` annotation above methods that interact with the database, especially those modifying data.
+    public AppointmentService(AppointmentRepository appointmentRepository,
+                              DoctorRepository doctorRepository,
+                              PatientRepository patientRepository,
+                              ClinicLocationRepository clinicLocationRepository) {
+        this.appointmentRepository = appointmentRepository;
+        this.doctorRepository = doctorRepository;
+        this.patientRepository = patientRepository;
+        this.clinicLocationRepository = clinicLocationRepository;
+    }
 
-// 4. **Book Appointment Method**:
-//    - Responsible for saving the new appointment to the database.
-//    - If the save operation fails, it returns `0`; otherwise, it returns `1`.
-//    - Instruction: Ensure that the method handles any exceptions and returns an appropriate result code.
+    @Transactional
+    public AppointmentDTO book(AppointmentCreateRequest req) {
+        validateBookingRequest(req);
 
-// 5. **Update Appointment Method**:
-//    - This method is used to update an existing appointment based on its ID.
-//    - It validates whether the patient ID matches, checks if the appointment is available for updating, and ensures that the doctor is available at the specified time.
-//    - If the update is successful, it saves the appointment; otherwise, it returns an appropriate error message.
-//    - Instruction: Ensure proper validation and error handling is included for appointment updates.
+        Doctor doctor = doctorRepository.findById(req.getDoctorId())
+                .orElseThrow(() -> new IllegalArgumentException("Doctor not found"));
+        if (doctor.getActive() != null && !doctor.getActive()) {
+            throw new IllegalStateException("Doctor is not active");
+        }
 
-// 6. **Cancel Appointment Method**:
-//    - This method cancels an appointment by deleting it from the database.
-//    - It ensures the patient who owns the appointment is trying to cancel it and handles possible errors.
-//    - Instruction: Make sure that the method checks for the patient ID match before deleting the appointment.
+        Patient patient = patientRepository.findById(req.getPatientId())
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
 
-// 7. **Get Appointments Method**:
-//    - This method retrieves a list of appointments for a specific doctor on a particular day, optionally filtered by the patient's name.
-//    - It uses `@Transactional` to ensure that database operations are consistent and handled in a single transaction.
-//    - Instruction: Ensure the correct use of transaction boundaries, especially when querying the database for appointments.
+        ClinicLocation location = clinicLocationRepository.findById(req.getClinicLocationId())
+                .orElseThrow(() -> new IllegalArgumentException("Clinic location not found"));
 
-// 8. **Change Status Method**:
-//    - This method updates the status of an appointment by changing its value in the database.
-//    - It should be annotated with `@Transactional` to ensure the operation is executed in a single transaction.
-//    - Instruction: Add `@Transactional` before this method to ensure atomicity when updating appointment status.
+        // Optional: enforce doctor belongs to location (uncomment if required)
+        // if (doctor.getClinicLocation() == null || !doctor.getClinicLocation().getId().equals(location.getId())) {
+        //     throw new IllegalArgumentException("Doctor does not operate at the specified clinic location");
+        // }
 
+        if (appointmentRepository.existsByDoctor_IdAndAppointmentTime(doctor.getId(), req.getAppointmentTime())) {
+            throw new IllegalStateException("Time slot already booked for doctor");
+        }
 
+        Appointment appt = new Appointment()
+                .setDoctor(doctor)
+                .setPatient(patient)
+                .setClinicLocation(location)
+                .setAppointmentTime(req.getAppointmentTime())
+                .setStatus(Appointment.STATUS_SCHEDULED);
+
+        Appointment saved = appointmentRepository.save(appt);
+        return AppointmentMapper.toDTO(saved);
+    }
+
+    @Transactional
+    public AppointmentDTO update(AppointmentUpdateRequest req, Long requestingPatientId) {
+        Appointment appt = appointmentRepository.findById(req.getAppointmentId())
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
+
+        if (!appt.getPatient().getId().equals(requestingPatientId)) {
+            throw new SecurityException("You cannot modify another patient's appointment");
+        }
+
+        if (appt.getStatus() != null && appt.getStatus() != Appointment.STATUS_SCHEDULED) {
+            throw new IllegalStateException("Only scheduled appointments can be updated");
+        }
+
+        if (req.getNewAppointmentTime() != null) {
+            if (req.getNewAppointmentTime().isBefore(LocalDateTime.now())) {
+                throw new IllegalArgumentException("New appointment time must be in the future");
+            }
+            Long doctorIdToCheck = req.getNewDoctorId() != null ? req.getNewDoctorId() : appt.getDoctor().getId();
+            if (appointmentRepository.existsByDoctor_IdAndAppointmentTime(doctorIdToCheck, req.getNewAppointmentTime())) {
+                throw new IllegalStateException("Requested new time conflicts with existing appointment");
+            }
+            appt.setAppointmentTime(req.getNewAppointmentTime());
+        }
+
+        if (req.getNewDoctorId() != null && !req.getNewDoctorId().equals(appt.getDoctor().getId())) {
+            Doctor newDoctor = doctorRepository.findById(req.getNewDoctorId())
+                    .orElseThrow(() -> new IllegalArgumentException("New doctor not found"));
+            if (newDoctor.getActive() != null && !newDoctor.getActive()) {
+                throw new IllegalStateException("New doctor is not active");
+            }
+            appt.setDoctor(newDoctor);
+        }
+
+        if (req.getNewClinicLocationId() != null &&
+                (appt.getClinicLocation() == null ||
+                        !req.getNewClinicLocationId().equals(appt.getClinicLocation().getId()))) {
+            ClinicLocation newLocation = clinicLocationRepository.findById(req.getNewClinicLocationId())
+                    .orElseThrow(() -> new IllegalArgumentException("New clinic location not found"));
+            appt.setClinicLocation(newLocation);
+        }
+
+        Appointment saved = appointmentRepository.save(appt);
+        return AppointmentMapper.toDTO(saved);
+    }
+
+    @Transactional
+    public void cancel(Long appointmentId, Long requestingPatientId) {
+        Appointment appt = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
+        if (!appt.getPatient().getId().equals(requestingPatientId)) {
+            throw new SecurityException("You cannot cancel another patient's appointment");
+        }
+        if (appt.getStatus() != Appointment.STATUS_SCHEDULED) {
+            throw new IllegalStateException("Only scheduled appointments can be cancelled");
+        }
+        // Option 1: Soft cancel by status
+        appt.setStatus(Appointment.STATUS_CANCELLED);
+        appointmentRepository.save(appt);
+        // Option 2: Hard delete:
+        // appointmentRepository.delete(appt);
+    }
+
+    public List<AppointmentDTO> doctorDay(Long doctorId, LocalDate date, String patientNameFilter) {
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = start.plusDays(1);
+        List<Appointment> list;
+        if (patientNameFilter != null && !patientNameFilter.isBlank()) {
+            list = appointmentRepository.findDailyDoctorAppointmentsFiltered(
+                    doctorId, start, end, patientNameFilter.trim());
+        } else {
+            list = appointmentRepository.findDailyDoctorAppointments(doctorId, start, end);
+        }
+        return list.stream().map(AppointmentMapper::toDTO).collect(toList());
+    }
+
+    @Transactional
+    public void changeStatus(AppointmentStatusUpdateRequest req) {
+        Appointment appt = appointmentRepository.findById(req.getAppointmentId())
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found"));
+        appt.setStatus(req.getStatus());
+        appointmentRepository.save(appt);
+    }
+
+    public List<AppointmentDTO> patientAppointments(Long patientId,
+                                                    String doctorName,
+                                                    String condition,
+                                                    Integer status) {
+        List<Appointment> base;
+
+        if (doctorName != null && !doctorName.isBlank() && status != null) {
+            base = appointmentRepository.filterByDoctorNameAndPatientIdAndStatus(
+                    doctorName.trim(), patientId, status);
+        } else if (doctorName != null && !doctorName.isBlank()) {
+            base = appointmentRepository.filterByDoctorNameAndPatientId(
+                    doctorName.trim(), patientId);
+        } else if (status != null) {
+            base = appointmentRepository.findByPatient_IdAndStatusOrderByAppointmentTimeAsc(
+                    patientId, status);
+        } else {
+            base = appointmentRepository.findByPatient_Id(patientId);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        return base.stream()
+                .filter(a -> {
+                    if (condition == null || condition.isBlank() || "all".equalsIgnoreCase(condition)) return true;
+                    boolean future = a.getAppointmentTime().isAfter(now);
+                    return switch (condition.toLowerCase()) {
+                        case "future", "upcoming" -> future;
+                        case "past" -> !future;
+                        default -> true;
+                    };
+                })
+                .map(AppointmentMapper::toDTO)
+                .collect(toList());
+    }
+
+    private void validateBookingRequest(AppointmentCreateRequest req) {
+        if (req.getAppointmentTime() == null) {
+            throw new IllegalArgumentException("Appointment time required");
+        }
+        if (req.getAppointmentTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Appointment time must be in the future");
+        }
+        if (req.getDoctorId() == null || req.getPatientId() == null || req.getClinicLocationId() == null) {
+            throw new IllegalArgumentException("Doctor, patient, and clinic location are required");
+        }
+
+        // Optionally enforce 15/30 min increments:
+        // LocalTime t = req.getAppointmentTime().toLocalTime();
+        // if (t.getMinute() % 15 != 0) throw new IllegalArgumentException("Time must align to 15-minute increments");
+    }
 }

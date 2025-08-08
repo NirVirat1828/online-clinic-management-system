@@ -1,56 +1,141 @@
 package com.project.back_end.models;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+/**
+ * Prescription stored in MongoDB (schema section describes a relational style, but
+ * your repository comment indicates MongoRepository usage).
+ *
+ * Fields (aligned with schema intent):
+ *  - id: String (Mongo ObjectId as String)
+ *  - appointmentId: Long (FK reference to relational appointment)
+ *  - doctorId: Long  (FK reference to relational doctor)
+ *  - patientId: Long (FK reference to relational patient)
+ *  - prescribedAt: LocalDateTime (default now)
+ *  - notes: String (free text)
+ *
+ * Indexes:
+ *  - appointmentId indexed for quick lookup
+ *  - patientId optionally indexed (add if needed)
+ */
+@Document(collection = "prescriptions")
 public class Prescription {
 
-  // @Document annotation:
-//    - Marks the class as a MongoDB document (a collection in MongoDB).
-//    - The collection name is specified as "prescriptions" to map this class to the "prescriptions" collection in MongoDB.
+    @Id
+    private String id;
 
-// 1. 'id' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the unique identifier for each prescription.
-//      - The @Id annotation marks it as the primary key in the MongoDB collection.
-//      - The id is of type String, which is commonly used for MongoDB's ObjectId as it stores IDs as strings in the database.
+    @NotNull
+    @Indexed
+    private Long appointmentId;
 
-// 2. 'patientName' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the name of the patient receiving the prescription.
-//      - The @NotNull annotation ensures that the patient name is required.
-//      - The @Size(min = 3, max = 100) annotation ensures that the name length is between 3 and 100 characters, ensuring a reasonable name length.
+    @NotNull
+    private Long doctorId;
 
-// 3. 'appointmentId' field:
-//    - Type: private Long
-//    - Description:
-//      - Represents the ID of the associated appointment where the prescription was given.
-//      - The @NotNull annotation ensures that the appointment ID is required for the prescription.
+    @NotNull
+    @Indexed
+    private Long patientId;
 
-// 4. 'medication' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the medication prescribed to the patient.
-//      - The @NotNull annotation ensures that the medication name is required.
-//      - The @Size(min = 3, max = 100) annotation ensures that the medication name is between 3 and 100 characters, which ensures meaningful medication names.
+    @NotNull
+    private LocalDateTime prescribedAt = LocalDateTime.now();
 
-// 5. 'dosage' field:
-//    - Type: private String
-//    - Description:
-//      - Represents the dosage information for the prescribed medication.
-//      - The @NotNull annotation ensures that the dosage information is provided.
+    @NotBlank
+    private String notes;
 
-// 6. 'doctorNotes' field:
-//    - Type: private String
-//    - Description:
-//      - Represents any additional notes or instructions from the doctor regarding the prescription.
-//      - The @Size(max = 200) annotation ensures that the doctor's notes do not exceed 200 characters, providing a reasonable limit for additional notes.
+    public Prescription() {}
 
-// 7. Constructors:
-//    - The class includes a no-argument constructor (default constructor) and a parameterized constructor that initializes the fields: patientName, medication, dosage, doctorNotes, and appointmentId.
+    public Prescription(Long appointmentId,
+                        Long doctorId,
+                        Long patientId,
+                        String notes) {
+        this.appointmentId = appointmentId;
+        this.doctorId = doctorId;
+        this.patientId = patientId;
+        this.notes = notes;
+        this.prescribedAt = LocalDateTime.now();
+    }
 
-// 8. Getters and Setters:
-//    - Standard getter and setter methods are provided for all fields: id, patientName, medication, dosage, doctorNotes, and appointmentId.
-//    - These methods allow access and modification of the fields of the Prescription class.
+    public String getId() {
+        return id;
+    }
 
+    public Prescription setId(String id) {
+        this.id = id;
+        return this;
+    }
 
+    public Long getAppointmentId() {
+        return appointmentId;
+    }
+
+    public Prescription setAppointmentId(Long appointmentId) {
+        this.appointmentId = appointmentId;
+        return this;
+    }
+
+    public Long getDoctorId() {
+        return doctorId;
+    }
+
+    public Prescription setDoctorId(Long doctorId) {
+        this.doctorId = doctorId;
+        return this;
+    }
+
+    public Long getPatientId() {
+        return patientId;
+    }
+
+    public Prescription setPatientId(Long patientId) {
+        this.patientId = patientId;
+        return this;
+    }
+
+    public LocalDateTime getPrescribedAt() {
+        return prescribedAt;
+    }
+
+    public Prescription setPrescribedAt(LocalDateTime prescribedAt) {
+        this.prescribedAt = prescribedAt;
+        return this;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public Prescription setNotes(String notes) {
+        this.notes = notes;
+        return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Prescription that)) return false;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31;
+    }
+
+    @Override
+    public String toString() {
+        return "Prescription{" +
+                "id='" + id + '\'' +
+                ", appointmentId=" + appointmentId +
+                ", doctorId=" + doctorId +
+                ", patientId=" + patientId +
+                ", prescribedAt=" + prescribedAt +
+                ", notes='" + (notes != null ? notes : "") + '\'' +
+                '}';
+    }
 }
