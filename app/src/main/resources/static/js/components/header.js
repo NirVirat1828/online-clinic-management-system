@@ -1,125 +1,336 @@
-/*
-  Step-by-Step Explanation of Header Section Rendering
+/**
+ * Header rendering and session-aware navigation builder.
+ *
+ * Responsibilities:
+ *  - Dynamically render the header based on user role & token.
+ *  - Provide login / signup / add doctor / navigation buttons.
+ *  - Gracefully handle expired sessions (role but missing token).
+ *  - Expose utility logout functions.
+ *
+ * Assumptions:
+ *  - A container with id="header" may exist in the DOM (if not, it will be created at the top of <body>).
+ *  - modals.js exports openModal(type) (ES module) OR defines window.openModal if using classic scripts.
+ *  - Roles used: "admin", "doctor", "loggedPatient", "patient" (pre-login patient context), or null/undefined.
+ *  - localStorage keys:
+ *      userRole -> one of the roles above
+ *      token    -> session token for authenticated roles (admin, doctor, loggedPatient)
+ *
+ * You can adapt paths / role names as needed for your backend.
+ */
 
-  This code dynamically renders the header section of the page based on the user's role, session status, and available actions (such as login, logout, or role-switching).
+ // If you are using ES modules, uncomment the import below.
+ // import { openModal } from "./modals.js";
 
-  1. Define the `renderHeader` Function
+/**
+ * Safely get a reference to openModal whether in module or global scope.
+ * @returns {Function|undefined}
+ */
+function getOpenModalFn() {
+  if (typeof openModal === "function") return openModal;
+  if (typeof window !== "undefined" && typeof window.openModal === "function") return window.openModal;
+  return undefined;
+}
 
-     * The `renderHeader` function is responsible for rendering the entire header based on the user's session, role, and whether they are logged in.
+/**
+ * Retrieve current role from localStorage.
+ * @returns {string|null}
+ */
+function getCurrentRole() {
+  return localStorage.getItem("userRole");
+}
 
-  2. Select the Header Div
+/**
+ * Retrieve session token from localStorage.
+ * @returns {string|null}
+ */
+function getToken() {
+  return localStorage.getItem("token");
+}
 
-     * The `headerDiv` variable retrieves the HTML element with the ID `header`, where the header content will be inserted.
-       ```javascript
-       const headerDiv = document.getElementById("header");
-       ```
+/**
+ * Determines if a role requires a token to be considered valid.
+ * @param {string|null} role
+ * @returns {boolean}
+ */
+function roleRequiresToken(role) {
+  return role === "admin" || role === "doctor" || role === "loggedPatient";
+}
 
-  3. Check if the Current Page is the Root Page
+/**
+ * Main entry: render the header once (idempotent; will replace existing header content each call).
+ */
+export function renderHeader() {
+  ensureHeaderMountPoint();
 
-     * The `window.location.pathname` is checked to see if the current page is the root (`/`). If true, the user's session data (role) is removed from `localStorage`, and the header is rendered without any user-specific elements (just the logo and site title).
-       ```javascript
-       if (window.location.pathname.endsWith("/")) {
-         localStorage.removeItem("userRole");
-         headerDiv.innerHTML = `
-           <header class="header">
-             <div class="logo-section">
-               <img src="../assets/images/logo/logo.png" alt="Hospital CRM Logo" class="logo-img">
-               <span class="logo-title">Hospital CMS</span>
-             </div>
-           </header>`;
-         return;
-       }
-       ```
+  const headerDiv = document.getElementById("header");
+  if (!headerDiv) {
+    console.error("Failed to create or locate #header container.");
+    return;
+  }
 
-  4. Retrieve the User's Role and Token from LocalStorage
+  // If user is at root ("/" or ends with "/index.html" depending on hosting) reset role (as per original description)
+  if (isRootLandingPage()) {
+    localStorage.removeItem("userRole");
+  }
 
-     * The `role` (user role like admin, patient, doctor) and `token` (authentication token) are retrieved from `localStorage` to determine the user's current session.
-       ```javascript
-       const role = localStorage.getItem("userRole");
-       const token = localStorage.getItem("token");
-       ```
+  const role = getCurrentRole();
+  const token = getToken();
 
-  5. Initialize Header Content
+  // Handle expired or invalid sessions (role present but missing token)
+  if (roleRequiresToken(role) && !token) {
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("token");
+    alert("Session expired or invalid login. Please log in again.");
+    redirectTo("/");
+    return;
+  }
 
-     * The `headerContent` variable is initialized with basic header HTML (logo section), to which additional elements will be added based on the user's role.
-       ```javascript
-       let headerContent = `<header class="header">
-         <div class="logo-section">
-           <img src="../assets/images/logo/logo.png" alt="Hospital CRM Logo" class="logo-img">
-           <span class="logo-title">Hospital CMS</span>
-         </div>
-         <nav>`;
-       ```
+  const headerEl = buildHeaderElement(role);
+  headerDiv.innerHTML = "";
+  headerDiv.appendChild(headerEl);
 
-  6. Handle Session Expiry or Invalid Login
+  attachHeaderButtonListeners(role);
+}
 
-     * If a user with a role like `loggedPatient`, `admin`, or `doctor` does not have a valid `token`, the session is considered expired or invalid. The user is logged out, and a message is shown.
-       ```javascript
-       if ((role === "loggedPatient" || role === "admin" || role === "doctor") && !token) {
-         localStorage.removeItem("userRole");
-         alert("Session expired or invalid login. Please log in again.");
-         window.location.href = "/";   or a specific login page
-         return;
-       }
-       ```
+/**
+ * Programmatically build the header DOM for maintainability & safety.
+ * @param {string|null} role
+ * @returns {HTMLElement}
+ */
+function buildHeaderElement(role) {
+  const header = document.createElement("header");
+  header.className = "header";
 
-  7. Add Role-Specific Header Content
+  // Logo Section
+  const logoSection = document.createElement("div");
+  logoSection.className = "logo-section";
 
-     * Depending on the user's role, different actions or buttons are rendered in the header:
-       - **Admin**: Can add a doctor and log out.
-       - **Doctor**: Has a home button and log out.
-       - **Patient**: Shows login and signup buttons.
-       - **LoggedPatient**: Has home, appointments, and logout options.
-       ```javascript
-       else if (role === "admin") {
-         headerContent += `
-           <button id="addDocBtn" class="adminBtn" onclick="openModal('addDoctor')">Add Doctor</button>
-           <a href="#" onclick="logout()">Logout</a>`;
-       } else if (role === "doctor") {
-         headerContent += `
-           <button class="adminBtn"  onclick="selectRole('doctor')">Home</button>
-           <a href="#" onclick="logout()">Logout</a>`;
-       } else if (role === "patient") {
-         headerContent += `
-           <button id="patientLogin" class="adminBtn">Login</button>
-           <button id="patientSignup" class="adminBtn">Sign Up</button>`;
-       } else if (role === "loggedPatient") {
-         headerContent += `
-           <button id="home" class="adminBtn" onclick="window.location.href='/pages/loggedPatientDashboard.html'">Home</button>
-           <button id="patientAppointments" class="adminBtn" onclick="window.location.href='/pages/patientAppointments.html'">Appointments</button>
-           <a href="#" onclick="logoutPatient()">Logout</a>`;
-       }
-       ```
+  const logoImg = document.createElement("img");
+  logoImg.src = "../assets/images/logo/logo.png"; // Adjust path if needed.
+  logoImg.alt = "Hospital CMS Logo";
+  logoImg.className = "logo-img";
 
+  const logoTitle = document.createElement("span");
+  logoTitle.className = "logo-title";
+  logoTitle.textContent = "Hospital CMS";
 
+  logoSection.appendChild(logoImg);
+  logoSection.appendChild(logoTitle);
 
-  9. Close the Header Section
+  // Navigation
+  const nav = document.createElement("nav");
+  nav.setAttribute("aria-label", "Main Navigation");
 
+  // Build nav items depending on role
+  const fragment = document.createDocumentFragment();
 
+  if (role === "admin") {
+    fragment.appendChild(makeButton("Add Doctor", {
+      id: "addDocBtn",
+      className: "adminBtn",
+      onClick: () => {
+        const om = getOpenModalFn();
+        if (om) om("addDoctor");
+        else console.error("openModal function not found for Add Doctor.");
+      }
+    }));
+    fragment.appendChild(makeAnchor("Logout", { onClick: logout }));
+  } else if (role === "doctor") {
+    fragment.appendChild(makeButton("Home", {
+      className: "adminBtn",
+      onClick: () => selectRole("doctor")
+    }));
+    fragment.appendChild(makeAnchor("Logout", { onClick: logout }));
+  } else if (role === "loggedPatient") {
+    fragment.appendChild(makeButton("Home", {
+      id: "home",
+      className: "adminBtn",
+      onClick: () => redirectTo("/pages/loggedPatientDashboard.html")
+    }));
+    fragment.appendChild(makeButton("Appointments", {
+      id: "patientAppointments",
+      className: "adminBtn",
+      onClick: () => redirectTo("/pages/patientAppointments.html")
+    }));
+    fragment.appendChild(makeAnchor("Logout", { onClick: logoutPatient }));
+  } else {
+    // Unauthenticated / pre-selection (role === null or "patient")
+    fragment.appendChild(makeButton("Patient Login", {
+      id: "patientLogin",
+      className: "adminBtn",
+      onClick: () => {
+        const om = getOpenModalFn();
+        if (om) om("patientLogin");
+        else console.error("openModal function not found for Patient Login.");
+      }
+    }));
+    fragment.appendChild(makeButton("Patient Sign Up", {
+      id: "patientSignup",
+      className: "adminBtn",
+      onClick: () => {
+        const om = getOpenModalFn();
+        if (om) om("patientSignup");
+        else console.error("openModal function not found for Patient Signup.");
+      }
+    }));
+    // Provide doctor & admin login entry points
+    fragment.appendChild(makeButton("Doctor Login", {
+      id: "doctorLogin",
+      className: "adminBtn",
+      onClick: () => {
+        const om = getOpenModalFn();
+        if (om) om("doctorLogin");
+        else console.error("openModal function not found for Doctor Login.");
+      }
+    }));
+    fragment.appendChild(makeButton("Admin Login", {
+      id: "adminLogin",
+      className: "adminBtn",
+      onClick: () => {
+        const om = getOpenModalFn();
+        if (om) om("adminLogin");
+        else console.error("openModal function not found for Admin Login.");
+      }
+    }));
+  }
 
-  10. Render the Header Content
+  nav.appendChild(fragment);
 
-     * Insert the dynamically generated `headerContent` into the `headerDiv` element.
-       ```javascript
-       headerDiv.innerHTML = headerContent;
-       ```
+  header.appendChild(logoSection);
+  header.appendChild(nav);
 
-  11. Attach Event Listeners to Header Buttons
+  return header;
+}
 
-     * Call `attachHeaderButtonListeners` to add event listeners to any dynamically created buttons in the header (e.g., login, logout, home).
-       ```javascript
-       attachHeaderButtonListeners();
-       ```
+/**
+ * Attach listeners which depend on dynamic elements post-render
+ * (Currently most clicks are attached inline in creation; this is a placeholder
+ * if you decide to move to event delegation or have dynamic toggles.)
+ * @param {string|null} role
+ */
+function attachHeaderButtonListeners(role) {
+  // Example: If you want to add extra logic for some role post-render:
+  // if (role === "admin") { ... }
+}
 
+/**
+ * Utility: Create a button element.
+ * @param {string} text
+ * @param {Object} opts
+ * @returns {HTMLButtonElement}
+ */
+function makeButton(text, opts = {}) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = text;
+  if (opts.id) btn.id = opts.id;
+  if (opts.className) btn.className = opts.className;
+  if (typeof opts.onClick === "function") {
+    btn.addEventListener("click", opts.onClick);
+  }
+  return btn;
+}
 
-  ### Helper Functions
+/**
+ * Utility: Create an anchor acting like a button (no navigation).
+ * @param {string} text
+ * @param {Object} opts
+ * @returns {HTMLAnchorElement}
+ */
+function makeAnchor(text, opts = {}) {
+  const a = document.createElement("a");
+  a.href = "#";
+  a.textContent = text;
+  a.role = "button";
+  if (opts.id) a.id = opts.id;
+  if (opts.className) a.className = opts.className;
+  if (typeof opts.onClick === "function") {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      opts.onClick(e);
+    });
+  }
+  return a;
+}
 
-  13. **attachHeaderButtonListeners**: Adds event listeners to login buttons for "Doctor" and "Admin" roles. If clicked, it opens the respective login modal.
+/**
+ * Determine if current page is considered "root" for session reset.
+ * Adjust logic based on deployment (e.g., maybe just check pathname === '/' ).
+ */
+function isRootLandingPage() {
+  const path = window.location.pathname;
+  return path === "/" || path.endsWith("/index.html");
+}
 
-  14. **logout**: Removes user session data and redirects the user to the root page.
+/**
+ * Redirect helper.
+ * @param {string} to
+ */
+function redirectTo(to) {
+  window.location.href = to;
+}
 
-  15. **logoutPatient**: Removes the patient's session token and redirects to the patient dashboard.
+/**
+ * Ensure a #header mount point exists (create if needed).
+ */
+function ensureHeaderMountPoint() {
+  if (!document.getElementById("header")) {
+    const div = document.createElement("div");
+    div.id = "header";
+    // Insert at top of body
+    document.body.insertBefore(div, document.body.firstChild);
+  }
+}
 
-  16. **Render the Header**: Finally, the `renderHeader()` function is called to initialize the header rendering process when the page loads.
-*/
-   
+/**
+ * Generic logout (admin / doctor or any token-based role).
+ * Clears session and navigates to root.
+ */
+export function logout() {
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("token");
+  redirectTo("/");
+}
+
+/**
+ * Patient-specific logout.
+ * If you want different behavior (e.g., redirect to splash page) adjust as needed.
+ */
+export function logoutPatient() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("userRole");
+  redirectTo("/");
+}
+
+/**
+ * Example placeholder for selecting a role (e.g., "doctor").
+ * Adjust to your real role selection logic or remove if not needed.
+ * @param {string} role
+ */
+export function selectRole(role) {
+  localStorage.setItem("userRole", role);
+  renderHeader();
+}
+
+/**
+ * OPTIONAL: Expose functions on window for non-module pages (backward compatibility).
+ * Remove if using strict ES module imports everywhere.
+ */
+(function exposeGlobalsIfNeeded() {
+  if (typeof window !== "undefined") {
+    window.renderHeader = window.renderHeader || renderHeader;
+    window.logout = window.logout || logout;
+    window.logoutPatient = window.logoutPatient || logoutPatient;
+    window.selectRole = window.selectRole || selectRole;
+  }
+})();
+
+/**
+ * Auto-render on DOMContentLoaded (can be removed if you prefer manual control).
+ */
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", renderHeader);
+} else {
+  // Document already loaded
+  renderHeader();
+}

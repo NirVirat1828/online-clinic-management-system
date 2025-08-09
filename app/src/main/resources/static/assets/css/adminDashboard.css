@@ -1,94 +1,410 @@
-/*this is the style sheet for the adminDashboard. */
-
-/* 
-Global Reset (`*`)
-
-* Purpose: Ensure consistent layout across all browsers.
-* Properties:
-
-  * `margin: 0` — removes default outer spacing from all elements.
-  * `padding: 0` — removes default inner spacing.
-  * `box-sizing: border-box` — ensures padding and borders are included within the total width/height of elements.
-
-Base HTML & Body (`html, body`)
-
-* Purpose: Establish a full-height layout and apply a standard font across the page.
-* Properties:
-
-  * `height: 100%` — allows containers to stretch to the full viewport height.
-  * `font-family: Arial, sans-serif` — applies a clean, readable sans-serif font.
-
-Main Layout Wrapper (`.wrapper`)
-
-* Purpose: Create a flexible, vertical layout that fills the entire screen.
-* Properties:
-
-  * `display: flex` — enables flexbox for layout control.
-  * `flex-direction: column` — stacks children vertically.
-  * `min-height: 100vh` — ensures the wrapper always covers full screen height.
-
-Section Heading (`h2`)
-
-* Purpose: Style the headings prominently for section separation.
-* Properties:
-
-  * `font-size: 32px` — makes the heading large and noticeable.
-  * `font-weight: bold` — emphasizes text.
-  * `margin-bottom: 50px` — creates space below the heading.
-  * `color: #003e3e` — uses a strong teal for visual anchoring.
-
-Main Content Section (`.main-content`)
-
-* Purpose: Layout the main content with padding and a background image.
-* Properties:
-
-  * `flex-grow: 1` — lets the content fill the available vertical space.
-  * `padding: 40px` — adds internal spacing around content.
-  * `display: flex` and `flex-direction: column` — organizes content in a vertical stack.
-  * `text-align: center` — centers the text.
-  * `background-image: url("index.png")` — sets a full-screen dashboard background.
-  * `background-size: cover` — ensures the image covers the whole section.
-  * `background-position: center` — centers the image.
-  * `background-repeat: no-repeat` — avoids tiling the image.
-  * `background-attachment: fixed` — fixes the image while scrolling.
-
-Primary Button (`button`)
-
-* Purpose: Design prominent, interactive buttons for main actions.
-
-* Properties:
-
-  * `background-color: #A62B1F` — sets a bold red color.
-  * `color: white` — makes text stand out.
-  * `border: none` — removes any outline/border.
-  * `border-radius: 12px` — creates rounded corners.
-  * `padding: 10px 20px` — gives space inside the button.
-  * `margin-top: 20px` — adds spacing above the button.
-  * `width: 200px` — ensures consistent button width.
-  * `cursor: pointer` — shows a hand icon on hover.
-  * `font-size: 16px` — makes the text readable.
-
-* On Hover:
-
-  * Retains the same red background to maintain branding.
-
-Admin Button (`.adminBtn`)
-
-* Purpose: Provide a secondary button style for admin-specific actions.
-
-* Properties:
-
-  * `background-color: #f4f4f4` — uses a light grey background.
-  * `color: #333` — uses dark text for contrast.
-  * `font-weight: bold` — emphasizes text.
-  * `width: 110px` — smaller, compact width.
-  * `padding: 10px 0` — vertical padding only.
-  * `border: none` — clean look.
-  * `cursor: pointer` — indicates it's clickable.
-
-* On Hover**:
-
-   Changes text color to `#A62B1F` for brand consistency while keeping the background same.
-
-
+/* adminDashboard.css
+   Styles specific to the Admin Dashboard (doctor management).
+   The top section directly implements the documented specifications provided.
 */
+
+/* ------------- Global Reset ------------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ------------- Base Elements ------------- */
+html,
+body {
+  height: 100%;
+  font-family: Arial, sans-serif;
+  line-height: 1.4;
+  color: #222;
+  background-color: #f7f9fa;
+}
+
+/* ------------- Layout Wrappers ------------- */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.admin-dashboard-container {
+  width: 100%;
+}
+
+/* ------------- Headings ------------- */
+h1,
+h2,
+h3 {
+  font-weight: bold;
+  color: #003e3e;
+}
+
+h2 {
+  font-size: 32px;
+  margin-bottom: 50px;
+}
+
+/* ------------- Page Header ------------- */
+.page-header {
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.35rem;
+}
+
+.page-subtitle {
+  font-size: 0.95rem;
+  color: #446;
+  opacity: 0.85;
+}
+
+/* ------------- Main Content ------------- */
+.main-content {
+  flex-grow: 1;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  background-image: url("index.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  backdrop-filter: blur(1px);
+}
+
+/* Provide a subtle overlay for readability if using a vibrant background */
+.main-content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.6);
+  z-index: -1;
+}
+
+/* Ensure stacking context for pseudo background */
+.main-content {
+  position: relative;
+}
+
+/* ------------- Controls Bar ------------- */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-end;
+  justify-content: flex-start;
+  background: #ffffffcf;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px -4px rgba(0,0,0,0.12);
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.controls .search-group,
+.controls .filter-group,
+.controls .action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+/* ------------- Inputs / Selects ------------- */
+.search-input,
+.filter-select {
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid #cbd5dc;
+  border-radius: 8px;
+  outline: none;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input:focus,
+.filter-select:focus {
+  border-color: #006d6d;
+  box-shadow: 0 0 0 3px rgba(0, 109, 109, 0.15);
+}
+
+.filter-select {
+  cursor: pointer;
+  background-image: linear-gradient(to bottom, #fff, #f9fafa);
+}
+
+/* ------------- Primary Button (Generic <button>) ------------- */
+button {
+  background-color: #A62B1F;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 20px;
+  margin-top: 20px;
+  width: 200px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.3px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+button:hover {
+  /* Retain the same brand color per spec */
+  background-color: #A62B1F;
+  box-shadow: 0 4px 10px -4px rgba(0,0,0,0.35);
+  transform: translateY(-2px);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px -2px rgba(0,0,0,0.3);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ------------- Brand / Utility Buttons ------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 12px 18px;
+  width: auto;
+  margin-top: 0;
+  border-radius: 10px;
+  letter-spacing: 0.4px;
+  background-color: #006d6d;
+  color: #fff;
+}
+
+.btn-primary {
+  background-color: #006d6d;
+}
+
+.btn-primary:hover {
+  background-color: #005858;
+}
+
+.btn-danger {
+  background-color: #d62828;
+}
+
+.btn-danger:hover {
+  background-color: #b71f1f;
+}
+
+.btn-secondary {
+  background-color: #5c677d;
+}
+
+.btn-secondary:hover {
+  background-color: #4a5468;
+}
+
+/* ------------- Admin Button (.adminBtn) ------------- */
+.adminBtn {
+  background-color: #f4f4f4;
+  color: #333;
+  font-weight: bold;
+  width: 110px;
+  padding: 10px 0;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  letter-spacing: 0.25px;
+  border-radius: 10px;
+  transition: color 0.2s, box-shadow 0.2s;
+}
+
+.adminBtn:hover {
+  color: #A62B1F;
+  box-shadow: 0 2px 6px -2px rgba(0,0,0,0.25);
+}
+
+.adminBtn:active {
+  transform: translateY(1px);
+}
+
+/* ------------- Cards Grid ------------- */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 22px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* ------------- Doctor Card ------------- */
+.doctor-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #ffffff;
+  padding: 18px 18px 16px;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 18px -8px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.08);
+  border: 1px solid #e4ecef;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.doctor-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 26px -10px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.doctor-info {
+  text-align: left;
+  margin-bottom: 14px;
+}
+
+.doctor-name {
+  font-size: 1.15rem;
+  margin-bottom: 6px;
+  color: #083d3d;
+}
+
+.doctor-spec,
+.doctor-email,
+.availability-title {
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  color: #2e4d4d;
+}
+
+.availability-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.availability-list li {
+  background: #eef6f6;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #1c5d5d;
+  letter-spacing: 0.3px;
+}
+
+.no-availability {
+  background: #fff5f5;
+  color: #b91d1d;
+}
+
+.doctor-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+/* ------------- State Messages ------------- */
+.empty-state,
+.error-msg,
+.loading {
+  font-size: 0.95rem;
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px dashed #c2d4d8;
+  border-radius: 12px;
+  color: #345;
+  text-align: center;
+}
+
+.error-msg {
+  border-color: #f5b5b5;
+  background: #fff6f6;
+  color: #9c1d1d;
+}
+
+.loading {
+  background: #f0f8f8;
+  border-style: solid;
+  animation: pulseBg 2s infinite;
+}
+
+@keyframes pulseBg {
+  0% { background-color: #f0f8f8; }
+  50% { background-color: #e6f2f2; }
+  100% { background-color: #f0f8f8; }
+}
+
+/* ------------- Utility Classes ------------- */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  border: 0 !important;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 1rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; }
+
+/* ------------- Media Queries ------------- */
+@media (max-width: 880px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controls .search-group,
+  .controls .filter-group,
+  .controls .action-group {
+    width: 100%;
+  }
+
+  .cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .main-content {
+    padding: 28px 20px 60px;
+  }
+  h2 {
+    font-size: 26px;
+    margin-bottom: 32px;
+  }
+  .doctor-card {
+    padding: 16px 16px 14px;
+  }
+  .doctor-name {
+    font-size: 1.05rem;
+  }
+  button {
+    width: 100%;
+  }
+  .controls {
+    padding: 14px 15px;
+  }
+}

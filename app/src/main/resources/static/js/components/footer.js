@@ -1,104 +1,158 @@
-/*
-  Function to render the footer content into the page
-      Select the footer element from the DOM
-      Set the inner HTML of the footer element to include the footer content
-  This section dynamically generates the footer content for the web page, including the hospital's logo, copyright information, and various helpful links.
+/**
+ * Footer rendering module.
+ *
+ * Dynamically builds and injects a consistent footer across pages.
+ *
+ * Features / Improvements over plain innerHTML:
+ *  - Programmatic DOM creation (safer & easier to extend).
+ *  - Graceful fallback if #footer container is missing (auto-creates it).
+ *  - Easily extendable: add / remove columns via a configuration array.
+ *  - Accessible structure with nav landmarks and descriptive alt text.
+ *  - Optional year auto-update.
+ *
+ * Usage:
+ *  - Import (ESM): import { renderFooter } from "./footer.js"; renderFooter();
+ *  - Or rely on auto-execution after DOMContentLoaded (included below).
+ *
+ * Assumptions:
+ *  - Logo asset located at ../assets/images/logo/logo.png (adjust if needed).
+ */
 
-  1. Insert Footer HTML Content
+const FOOTER_LINK_GROUPS = [
+  {
+    title: "Company",
+    links: [
+      { label: "About", href: "#" },
+      { label: "Careers", href: "#" },
+      { label: "Press", href: "#" }
+    ]
+  },
+  {
+    title: "Support",
+    links: [
+      { label: "Account", href: "#" },
+      { label: "Help Center", href: "#" },
+      { label: "Contact Us", href: "#" }
+    ]
+  },
+  {
+    title: "Legals",
+    links: [
+      { label: "Terms & Conditions", href: "#" },
+      { label: "Privacy Policy", href: "#" },
+      { label: "Licensing", href: "#" }
+    ]
+  }
+];
 
-     * The content is inserted into the `footer` element with the ID "footer" using `footer.innerHTML`.
-     * This is done dynamically via JavaScript to ensure that the footer is properly rendered across different pages.
+/**
+ * Ensure there is a mount element with id="footer".
+ */
+function ensureFooterMountPoint() {
+  let mount = document.getElementById("footer");
+  if (!mount) {
+    mount = document.createElement("div");
+    mount.id = "footer";
+    document.body.appendChild(mount);
+  }
+  return mount;
+}
 
-  2. Create the Footer Wrapper
+/**
+ * Builds the footer element structure.
+ * @returns {HTMLElement} <footer> root
+ */
+function buildFooter() {
+  const footer = document.createElement("footer");
+  footer.className = "footer";
 
-     * The `<footer>` tag with class `footer` wraps the entire footer content, ensuring that it is styled appropriately.
-       ```html
-       <footer class="footer">
-       ```
+  const container = document.createElement("div");
+  container.className = "footer-container";
 
-  3. Create the Footer Container
+  // Logo + copyright
+  const logoWrapper = document.createElement("div");
+  logoWrapper.className = "footer-logo";
 
-     * Inside the footer, a container div with the class `footer-container` holds the content to maintain proper alignment and spacing.
-       ```html
-       <div class="footer-container">
-       ```
+  const logoImg = document.createElement("img");
+  logoImg.src = "../assets/images/logo/logo.png"; // Adjust path if needed
+  logoImg.alt = "Hospital CMS Logo";
 
-  4. Add the Hospital Logo and Copyright Info
+  const year = new Date().getFullYear();
+  const copy = document.createElement("p");
+  copy.textContent = `© Copyright ${year}. All Rights Reserved by Hospital CMS.`;
 
-     * A `footer-logo` div contains the hospital's logo (an image element) and the copyright information.
-       - The `<img>` tag displays the logo, with an `alt` attribute for accessibility.
-       - The copyright text is displayed in a paragraph element.
-       ```html
-       <div class="footer-logo">
-         <img src="../assets/images/logo/logo.png" alt="Hospital CMS Logo">
-         <p>© Copyright 2025. All Rights Reserved by Hospital CMS.</p>
-       </div>
-       ```
+  logoWrapper.appendChild(logoImg);
+  logoWrapper.appendChild(copy);
 
-  5. Create the Links Section
+  // Links Section
+  const linksWrapper = document.createElement("div");
+  linksWrapper.className = "footer-links";
+  linksWrapper.setAttribute("role", "navigation");
+  linksWrapper.setAttribute("aria-label", "Footer");
 
-     * A `footer-links` div contains all the links grouped into three sections: Company, Support, and Legals.
-     * This structure helps to organize the footer content and makes it easier for users to find related links.
+  FOOTER_LINK_GROUPS.forEach(group => {
+    const col = document.createElement("div");
+    col.className = "footer-column";
 
-  6. Add the 'Company' Links Column
+    const heading = document.createElement("h4");
+    heading.textContent = group.title;
+    col.appendChild(heading);
 
-     * Inside the `footer-links` div, the first column represents company-related links.
-       - The section includes a header (`<h4>Company</h4>`) followed by links for "About", "Careers", and "Press".
-       ```html
-       <div class="footer-column">
-         <h4>Company</h4>
-         <a href="#">About</a>
-         <a href="#">Careers</a>
-         <a href="#">Press</a>
-       </div>
-       ```
+    group.links.forEach(linkObj => {
+      const a = document.createElement("a");
+      a.href = linkObj.href;
+      a.textContent = linkObj.label;
+      a.rel = determineRel(linkObj.href);
+      col.appendChild(a);
+    });
 
-  7. Add the 'Support' Links Column
+    linksWrapper.appendChild(col);
+  });
 
-     * The second column is dedicated to support-related links.
-       - It includes a header (`<h4>Support</h4>`) followed by links for "Account", "Help Center", and "Contact Us".
-       ```html
-       <div class="footer-column">
-         <h4>Support</h4>
-         <a href="#">Account</a>
-         <a href="#">Help Center</a>
-         <a href="#">Contact Us</a>
-       </div>
-       ```
+  container.appendChild(logoWrapper);
+  container.appendChild(linksWrapper);
+  footer.appendChild(container);
 
-  8. Add the 'Legals' Links Column
+  return footer;
+}
 
-     * The third column contains legal-related links, such as "Terms & Conditions", "Privacy Policy", and "Licensing".
-       - The header (`<h4>Legals</h4>`) is followed by these links.
-       ```html
-       <div class="footer-column">
-         <h4>Legals</h4>
-         <a href="#">Terms & Conditions</a>
-         <a href="#">Privacy Policy</a>
-         <a href="#">Licensing</a>
-       </div>
-       ```
+/**
+ * Determine a safe rel attribute for external links.
+ * @param {string} href
+ * @returns {string|undefined}
+ */
+function determineRel(href) {
+  if (!href || href === "#" || href.startsWith("/")) return undefined;
+  // External link
+  return "noopener noreferrer";
+}
 
-  9. Close the Footer Container
+/**
+ * Public API: Render / re-render the footer.
+ */
+export function renderFooter() {
+  const mount = ensureFooterMountPoint();
+  const footerEl = buildFooter();
+  mount.innerHTML = "";
+  mount.appendChild(footerEl);
+}
 
-     * Close the `footer-container` div to ensure proper structure.
-       ```html
-       </div> <!-- End of footer-container -->
-       ```
+/**
+ * Optional: Expose globally for non-module usage.
+ */
+(function exposeGlobal() {
+  if (typeof window !== "undefined") {
+    if (!window.renderFooter) {
+      window.renderFooter = renderFooter;
+    }
+  }
+})();
 
-  10. Close the Footer Element
-
-     * Finally, close the `<footer>` tag to complete the footer section.
-       ```html
-       </footer>
-       ```
-
-  11. Footer Rendering Complete
-
-     * The `footer.innerHTML` code completes the dynamic rendering of the footer by injecting the structured HTML content into the `footer` element on the page.
-
-
-
-  Call the renderFooter function to populate the footer in the page
-
-*/
+/**
+ * Auto-render on DOM ready (can be removed if you prefer manual control).
+ */
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => renderFooter());
+} else {
+  renderFooter();
+}

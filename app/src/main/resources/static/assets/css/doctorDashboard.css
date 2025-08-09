@@ -1,65 +1,309 @@
-/* This is the style sheet for the doctorDashboard.html */
-/* 
-**Table Header (`.table-header`)**
+/* doctorDashboard.css
+   Styles specific to doctorDashboard.html
+   Implements the provided specification plus a few minor accessibility / UX enhancements.
+*/
 
-* Set font size to `24px` for clear emphasis.
-* Use a dark teal color (`#015c5d`) for consistency with the theme.
-* Add `30px` bottom margin and remove right margin.
+/* ---------- Table Header (.table-header) ---------- */
+.table-header {
+  font-size: 24px;
+  color: #015c5d;
+  font-weight: 700;
+  margin: 0 0 30px 0;
+  line-height: 1.2;
+  letter-spacing: .5px;
+}
 
-**Table Styling (`table`)**
+/* ---------- Table Base Styling ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Arial, Helvetica, sans-serif;
+  margin-top: 20px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(2px);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px -10px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.05);
+  position: relative;
+}
 
-* Make the table full width (`100%`).
-* Collapse borders for clean lines.
-* Use a `sans-serif` font.
-* Add `20px` top margin for spacing.
+/* Contain overflow for rounded corners when table is wrapped */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 16px;
+}
 
-**Table Head (`thead`)**
+/* ---------- Table Head ---------- */
+thead {
+  background: #33333310;
+  color: #fff;
+  position: relative;
+}
 
-* Set a very light dark background (`#33333310`) for header row.
-* Use white text color (`#fff`).
+thead th {
+  background: linear-gradient(135deg, #016b6c, #015c5d);
+  color: #ffffff;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+}
 
-**Table Cells (`td, th`)**
+/* ---------- Cells ---------- */
+td,
+th {
+  padding: 12px 16px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+  vertical-align: middle;
+  line-height: 1.25;
+}
 
-* Apply padding of `12px 16px` for spacing.
-* Center-align the text.
-* Add a subtle bottom border (`1px solid #ddd`).
+tbody tr:last-child td {
+  border-bottom: none;
+}
 
-**Table Row Styling**
+/* Zebra striping */
+tbody tr:nth-child(odd) {
+  background: #ffffffc0;
+}
 
-* Alternate row colors for better readability:
+tbody tr:nth-child(even) {
+  background: #f9f9f959;
+}
 
-  * Even rows: semi-transparent light grey (`#f9f9f959`).
-  * Odd rows: soft white background (`#ffffffc0`).
-* On hover: highlight row with a light teal overlay (`#015c5d39`).
+/* Hover effect */
+tbody tr:hover {
+  background: #015c5d39;
+  transition: background .25s ease;
+}
 
-**Prescription Button (`.prescription-btn`)**
+/* Focus style if row is made focusable elsewhere */
+tbody tr:focus-within {
+  outline: 2px solid #015c5d;
+  outline-offset: -2px;
+}
 
-* Set size to `30px x 30px`.
-* Make it interactive with a pointer cursor.
-* Add transition effects for scale and brightness on hover.
-* On hover:
+/* ---------- Prescription Button ---------- */
+.prescription-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #015c5d;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0;
+  transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+  box-shadow: 0 3px 8px -4px rgba(0,0,0,0.45);
+}
 
-  * Slightly enlarge (`scale(1.1)`)
-  * Brighten appearance
-* On click: slightly shrink (`scale(0.95)`).
+.prescription-btn:hover {
+  transform: scale(1.1);
+  filter: brightness(1.12);
+  box-shadow: 0 5px 14px -4px rgba(0,0,0,0.55);
+}
 
-**No Record Message (`.noPatientRecord`)**
+.prescription-btn:active {
+  transform: scale(.95);
+  filter: brightness(.92);
+}
 
-* Use a `16px` italic grey font to indicate no data gently.
+.prescription-btn:focus-visible {
+  outline: 2px solid #ffda7a;
+  outline-offset: 2px;
+}
 
-**Today Button (`.today-btn`)**
+/* Optional variant if using an icon inside (e.g., SVG) */
+.prescription-btn svg {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  fill: currentColor;
+}
 
-* Add right margin (`10px`).
-* Add padding (`10px`).
-* Set background color to teal green (`#015c5d`).
+/* ---------- No Record Message ---------- */
+.noPatientRecord {
+  font-size: 16px;
+  font-style: italic;
+  color: #666;
+  text-align: center;
+  padding: 24px 12px;
+  background: #ffffffaa;
+  letter-spacing: 0.3px;
+}
 
-**Date Picker (`.date-picker`)**
+/* Utility row style for dynamic messages (reuse) */
+.message-row td {
+  font-size: 15px;
+  font-style: italic;
+  color: #4a5a5a;
+  background: #eef5f5;
+}
 
-* Add left margin (`10px`) and top margin (`13px`).
-* Round corners with `8px` radius.
-* Add padding (`10px`) and set fixed height (`30px`).
+/* ---------- Today Button ---------- */
+.today-btn {
+  margin-right: 10px;
+  padding: 10px;
+  background: #015c5d;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  transition: background .2s, transform .15s;
+  box-shadow: 0 4px 10px -5px rgba(0,0,0,0.4);
+}
 
----
+.today-btn:hover {
+  background: #017174;
+}
 
-Let me know if you'd like a consolidated style guide for the entire HospitalCRM frontend.
- */
+.today-btn:active {
+  transform: translateY(1px);
+}
+
+.today-btn:focus-visible {
+  outline: 2px solid #ffda7a;
+  outline-offset: 2px;
+}
+
+/* Hidden alias button if present (from doctorDashboard.html) */
+.alias-button.visually-hidden {
+  display: none !important;
+}
+
+/* ---------- Date Picker ---------- */
+.date-picker {
+  margin-left: 10px;
+  margin-top: 13px;
+  padding: 10px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #c9d6d6;
+  background: #ffffff;
+  color: #123;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  line-height: 1;
+}
+
+.date-picker:focus {
+  border-color: #015c5d;
+  box-shadow: 0 0 0 3px rgba(1,92,93,.25);
+}
+
+.date-picker::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: hue-rotate(20deg) saturate(1.2);
+}
+
+/* ---------- Scrollbar (WebKit) for Overflow Tables ---------- */
+.table-responsive::-webkit-scrollbar {
+  height: 10px;
+}
+.table-responsive::-webkit-scrollbar-track {
+  background: #e4eceb;
+  border-radius: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #017174;
+  border-radius: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #026265;
+}
+
+/* ---------- Responsive Adjustments ---------- */
+@media (max-width: 900px) {
+  thead th {
+    font-size: 11px;
+    padding: 10px 10px;
+  }
+
+  td {
+    font-size: 13px;
+    padding: 10px 10px;
+  }
+
+  .prescription-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 620px) {
+  table,
+  thead,
+  tbody,
+  th,
+  td,
+  tr {
+    display: block;
+  }
+
+  thead {
+    /* Hide the header row off-screen but keep for accessibility */
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  tbody tr {
+    background: #ffffffec !important;
+    margin-bottom: 14px;
+    border: 1px solid #e2e8e9;
+    border-radius: 10px;
+    padding: 8px 8px 4px;
+  }
+
+  tbody tr:hover {
+    background: #f4fbfb !important;
+  }
+
+  td {
+    border: none;
+    position: relative;
+    padding: 8px 12px 8px 110px;
+    text-align: left;
+    font-size: 14px;
+    min-height: 42px;
+  }
+
+  td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 12px;
+    top: 8px;
+    width: 90px;
+    font-weight: 600;
+    font-size: 12px;
+    color: #015c5d;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  .prescription-btn {
+    margin-top: 4px;
+  }
+}
+
+/* ---------- Optional Utility Classes ---------- */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 1rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; }

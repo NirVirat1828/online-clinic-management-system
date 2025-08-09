@@ -1,101 +1,192 @@
-<!-- doctorDashboard.html -->
+<!-- doctorDashboard.html
+     Doctor Dashboard interface for viewing & managing patient appointments and prescriptions.
+     Header & footer are injected dynamically. Appointment data loaded via doctorDashboard.js (module).
+-->
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Meta -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Doctor Dashboard | Hospital CMS</title>
 
-<!-- 
-Step-by-Step Explanation of `doctorDashboard.html`
-This file defines the Doctor Dashboard interface, allowing doctors to view and manage their patient appointments, search records, and access patient prescriptions.
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" th:href="@{/assets/images/logo/logo.png}" href="../assets/images/logo/logo.png" />
 
-1. Label the File
+    <!-- Stylesheets (order: base/global → shared dashboard → doctor specific) -->
+    <link rel="stylesheet" th:href="@{/assets/css/style.css}" href="../assets/css/style.css" />
+    <link rel="stylesheet" th:href="@{/assets/css/adminDashboard.css}" href="../assets/css/adminDashboard.css" />
+    <link rel="stylesheet" th:href="@{/assets/css/doctorDashboard.css}" href="../assets/css/doctorDashboard.css" />
 
-   * Add a comment at the top to identify the file as `doctorDashboard.html`.
+    <!-- Utility / Core Scripts -->
+    <script th:src="@{/js/util.js}" src="../js/util.js" defer></script>
+    <script th:src="@{/js/render.js}" src="../js/render.js" defer></script>
 
-2. Declare the Document Type
+    <!-- Shared Components -->
+    <script th:src="@{/js/components/header.js}" src="../js/components/header.js" type="module" defer></script>
+    <script th:src="@{/js/components/footer.js}" src="../js/components/footer.js" type="module" defer></script>
+    <script th:src="@{/js/components/modals.js}" src="../js/components/modals.js" type="module" defer></script>
+    <script th:src="@{/js/components/loginHandlers.js}" src="../js/components/loginHandlers.js" type="module" defer></script>
 
-   * Use `<!DOCTYPE html>` to define the document as an HTML5 file for consistent behavior across modern browsers.
+    <!-- Services / Components (appointments & patient rows) -->
+    <script th:src="@{/js/services/appointmentServices.js}" src="../js/services/appointmentServices.js" type="module" defer></script>
+    <script th:src="@{/js/components/patientRow.js}" src="../js/components/patientRow.js" type="module" defer></script>
+    <script th:src="@{/js/components/appointmentRow.js}" src="../js/components/appointmentRow.js" type="module" defer></script>
 
-3. Begin the HTML Document with Thymeleaf Namespace
+    <!-- Page Logic -->
+    <script th:src="@{/js/pages/doctorDashboard.js}" src="../js/pages/doctorDashboard.js" type="module" defer></script>
 
-   * The `<html>` tag includes `xmlns:th="http://www.thymeleaf.org"` to enable Thymeleaf-specific attributes used in Spring Boot applications.
+    <!-- (Optional) Appointments generic logic (if reused) -->
+    <script th:src="@{/js/pages/appointments.js}" src="../js/pages/appointments.js" type="module" defer></script>
+</head>
+<body>
+<div class="container doctor-dashboard-container">
+    <div class="wrapper">
 
-4. Head Section – Metadata and Assets
+        <!-- Header Placeholder -->
+        <div id="header"></div>
 
-   * Start the `<head>` section to include essential meta information, styles, and scripts.
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent" tabindex="-1" aria-labelledby="doctorDashboardTitle">
+            <header class="page-header">
+                <h1 id="doctorDashboardTitle">Doctor Dashboard</h1>
+                <p class="page-subtitle">Review today’s appointments, search patients, and access prescriptions.</p>
+            </header>
 
-5. Set Character Encoding
+            <!-- Search & Filters -->
+            <section class="controls" aria-label="Appointment Filters">
+                <div class="search-group">
+                    <label for="searchBar" class="visually-hidden">Search Patient</label>
+                    <!-- Primary search input (as per spec) -->
+                    <input
+                            type="text"
+                            id="searchBar"
+                            class="search-input"
+                            placeholder="Search patients..."
+                            autocomplete="off"
+                            aria-label="Search patients by name"
+                    />
+                    <!-- Alias for shared appointments.js (patientSearch) -->
+                    <input
+                            type="hidden"
+                            id="patientSearch"
+                    />
+                </div>
 
-   * Use `<meta charset="UTF-8">` to support all text characters and prevent encoding issues.
+                <div class="filter-group">
+                    <label for="datePicker">Select Date</label>
+                    <input
+                            type="date"
+                            id="datePicker"
+                            class="date-input"
+                            aria-label="Select appointment date"
+                    />
+                    <!-- Alias for shared script compatibility -->
+                    <input type="hidden" id="appointmentDate" />
+                </div>
 
-6. Set the Favicon
+                <div class="filter-group">
+                    <button type="button" id="todayButton" class="btn btn-secondary" aria-label="Jump to today's appointments">
+                        Today
+                    </button>
+                    <!-- Alias ID for shared script compatibility -->
+                    <button type="button" id="todayBtn" class="btn btn-secondary alias-button visually-hidden" tabindex="-1" aria-hidden="true">
+                        Today
+                    </button>
+                </div>
+            </section>
 
-   * Add a favicon using Thymeleaf pathing: 
-     `<link rel="icon" type="image/png" th:href="@{/assets/images/logo/logo.png}" />`
+            <!-- Appointments / Patients Table -->
+            <section class="appointments-section" aria-label="Patient Appointments">
+                <div class="table-responsive">
+                    <table class="data-table appointments-table" aria-describedby="appointmentsCaption">
+                        <caption id="appointmentsCaption" class="visually-hidden">
+                            Patient appointment list with prescription access.
+                        </caption>
+                        <thead>
+                        <tr>
+                            <th scope="col">Patient ID</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Phone No.</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Prescription</th>
+                        </tr>
+                        </thead>
+                        <tbody id="patientTableBody">
+                        <!-- Doctor-specific dynamic rows -->
+                        </tbody>
+                        <!-- Alias tbody for appointments.js (if reused) -->
+                        <tbody id="appointmentsTbody" class="visually-hidden"></tbody>
+                    </table>
+                </div>
+            </section>
 
-7. Set the Page Title
+            <!-- Additional Panels (optional placeholders) -->
+            <section id="extraPanels" hidden></section>
+        </main>
 
-   * Title the page `"Doctor Dashboard"` to show it in the browser tab.
+        <!-- Footer Placeholder -->
+        <div id="footer"></div>
 
-8. Link CSS Stylesheets
+    </div>
+</div>
 
-   * Include necessary CSS files:
-     - `adminDashboard.css` (for shared layout styles with admin interface)
-     - `doctorDashboard.css` (for doctor-specific styles)
-     - `style.css` (for general UI components)
+<!-- Shared Modal (login, prescription, etc.) -->
+<div id="modal" class="modal" aria-hidden="true" style="display:none;">
+    <div class="modal-overlay" data-close="true"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button id="closeModal" class="modal-close" aria-label="Close">&times;</button>
+        <div id="modal-body" class="modal-body"><!-- Dynamic modal content injected here --></div>
+    </div>
+</div>
 
-9. Link JavaScript Files (with `defer`)
+<!-- Inline Enhancements -->
+<script type="module">
+    // Accessibility: focus main after DOM ready
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("mainContent")?.focus();
 
-   * Load scripts using Thymeleaf's `th:src` and `defer` attribute to prevent blocking rendering:
-     - `render.js` – Handles common rendering logic.
-     - `util.js` – Provides utility functions.
-     - `header.js` and `footer.js` – Dynamically inject header/footer.
-     - `doctorDashboard.js` – Contains dashboard logic for doctor functionality, loaded as a module.
+      // Mirror primary search into hidden alias for shared script, if needed
+      const primarySearch = document.getElementById("searchBar");
+      const aliasSearch = document.getElementById("patientSearch");
+      if (primarySearch && aliasSearch) {
+        primarySearch.addEventListener("input", () => {
+          aliasSearch.value = primarySearch.value;
+          // If a shared loadAppointments function exists, invoke it
+          if (typeof window.loadAppointments === "function") {
+            window.loadAppointments();
+          }
+        });
+      }
 
-10. Close the Head and Begin the Body
+      // Sync date inputs if both exist
+      const datePicker = document.getElementById("datePicker");
+      const aliasDate = document.getElementById("appointmentDate");
+      if (datePicker && aliasDate) {
+        datePicker.addEventListener("change", () => {
+          aliasDate.value = datePicker.value;
+          if (typeof window.loadAppointments === "function") {
+            window.loadAppointments();
+          }
+        });
+      }
 
-    * Begin the visible part of the webpage using `<body onload="renderContent()">`, which calls a JavaScript function after loading.
-
-11. Create the Main Container
-
-    * Use `<div class="container">` to wrap all content and structure the page.
-
-12. Add a Wrapper for Page Content
-
-    * Nest elements inside a `wrapper` div for structured layout control.
-
-13. Insert a Header Placeholder
-
-    * Add `<div id="header"></div>` where the dynamic header will be injected.
-
-14. Define the Main Content Area
-
-    * Use `<div class="main-content">` for the central section of the dashboard.
-
-15. Add a Search Bar
-
-    * Include an input field with `id="searchBar"` for doctors to search patients or data:
-      ```html
-      <input type="text" id="searchBar" class="searchBar" placeholder="Search Bar for custom output" />
-      ```
-
-16. Add Filter Controls
-
-    * Include a filter section:
-      - A button (`#todayButton`) to view today's appointments.
-      - A date picker (`#datePicker`) to select specific dates.
-
-17. Add a Patient Table
-
-    * Display a table to list patient data:
-      - Headers: Patient ID, Name, Phone No., Email, and Prescription.
-      - Body: `<tbody id="patientTableBody"></tbody>` for dynamic content insertion.
-
-18. Insert a Footer Placeholder
-
-    * Use `<div id="footer"></div>` to load a common footer via JavaScript.
-
-19. Close the Wrapper and Container
-
-    * Close `wrapper` and `container` divs to maintain structural integrity.
-
-20. End the Body and HTML
-
-    * Properly close the `<body>` and `<html>` tags to complete the document.
- -->
+      // Today buttons
+      const todayBtn = document.getElementById("todayButton");
+      const aliasToday = document.getElementById("todayBtn");
+      todayBtn?.addEventListener("click", () => {
+        const today = new Date();
+        const iso = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
+          .toISOString()
+          .slice(0, 10);
+        if (datePicker) datePicker.value = iso;
+        if (aliasDate) aliasDate.value = iso;
+        if (typeof window.loadAppointments === "function") {
+          window.loadAppointments();
+        }
+      });
+      aliasToday?.addEventListener("click", () => todayBtn?.click());
+    });
+</script>
+</body>
+</html>

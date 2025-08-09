@@ -1,53 +1,250 @@
-/* this is the style sheet file for index.htlm  */
+/* index.css
+   Styles for index.html (role selection / landing page)
+   Implements the provided specification plus a few light UX & accessibility enhancements.
+*/
 
-/* 
-**Global Reset (`*`)**
+/* ---------- Global Reset ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-* Remove all default margin and padding.
-* Use `border-box` for sizing to include padding and border in element size.
+/* ---------- Base Document ---------- */
+html,
+body {
+  height: 100%;
+  font-family: 'Roboto', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #072b2b;
+  background: #f5fafa;
+}
 
-**Base (`html, body`)**
+/* Optional: provide font fallbacks if Alegreya is loaded elsewhere */
+@supports (font-variation-settings: normal) {
+  body {
+    font-feature-settings: "liga" 1, "kern" 1;
+  }
+}
 
-* Set height to 100% for full viewport layout.
-* Use the `'Roboto'` sans-serif font for modern, clean typography.
+/* ---------- Wrapper Layout ---------- */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 
-**Layout Wrapper (`.wrapper`)**
+/* ---------- Headings ---------- */
+h1,
+h2 {
+  font-family: 'Alegreya', 'Roboto', sans-serif;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #003e3e;
+}
 
-* Use a vertical flexbox layout.
-* Ensure the wrapper covers at least the full height of the screen (`min-height: 100vh`).
+h2 {
+  font-size: 48px;
+  margin-bottom: 50px;
+  letter-spacing: 0.5px;
+}
 
-**Heading (`h2`)**
+/* ---------- Main Content Section ---------- */
+.main-content {
+  flex-grow: 1;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;   /* vertical centering */
+  align-items: center;       /* horizontal centering */
+  text-align: center;
+  background-image: url("../images/index-bg.jpg"); /* adjust path/name as needed */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  position: relative;
+  isolation: isolate;
+}
 
-* Set a large font size (`48px`) for prominence.
-* Add a bottom margin of `50px` for spacing.
-* Use a dark teal color (`#003e3e`).
-* Make the font bold and use a blended font stack (`'Alegreya', 'Roboto', sans-serif`) for elegant styling.
+/* Soft overlay for readability over vivid images (optional) */
+.main-content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.55) 55%,
+    rgba(255, 255, 255, 0.78) 100%
+  );
+  z-index: -1;
+}
 
-**Main Section (`.main-content`)**
+/* ---------- Role Selection Section ---------- */
+.role-selection {
+  max-width: 640px;
+  width: 100%;
+}
 
-* Allow the section to grow to fill space with `flex-grow: 1`.
-* Add `40px` of internal padding.
-* Center content both horizontally and vertically using `justify-content` and `align-items`.
-* Display items in a column direction.
-* Center all text.
-* Apply a full-screen background image with:
+.role-selection .subtitle {
+  font-size: 1rem;
+  margin-top: -10px;
+  margin-bottom: 28px;
+  color: #2c5555;
+  opacity: 0.85;
+  letter-spacing: 0.3px;
+}
 
-  * `cover` size
-  * `center` positioning
-  * no repeat
-  * `fixed` attachment to keep image still during scroll
+.role-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 26px;
+}
 
-**Buttons (`button`)**
+/* ---------- Buttons (Base) ---------- */
+button,
+.role-btn {
+  background-color: #015c5d;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 20px;
+  width: 200px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.4px;
+  transition: background-color 0.2s ease, transform 0.18s ease, box-shadow 0.25s ease;
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 
-* Style with a teal green background (`#015c5d`) and white text.
-* Remove borders and round the corners (`12px`).
-* Use `10px 20px` padding and set width to `200px`.
-* Add a top margin of `10px` for spacing.
-* Enable pointer cursor and readable font size (`16px`).
-* On hover, change background color to bold red (`#A62B1F`).
+button:hover,
+.role-btn:hover {
+  background-color: #A62B1F; /* specified hover to bold red */
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px -10px rgba(0, 0, 0, 0.45), 0 4px 10px rgba(0, 0, 0, 0.08);
+}
 
-**Dashboard Buttons (`.dashboard-btn`)**
+button:active,
+.role-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.4);
+}
 
-* Use the same base green background (`#015c5d`) as the default button.
-* On hover, darken the background to deep teal (`#003e3e`) for visual feedback.
- */
+button:focus-visible,
+.role-btn:focus-visible {
+  outline: 3px solid #ffcf7a;
+  outline-offset: 3px;
+}
+
+/* Disabled state */
+button:disabled,
+.role-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ---------- Dashboard Buttons (.dashboard-btn) ---------- */
+.dashboard-btn {
+  background-color: #015c5d;
+}
+
+.dashboard-btn:hover {
+  background-color: #003e3e;
+  transform: translateY(-2px);
+}
+
+/* ---------- Info Block ---------- */
+.info-block {
+  font-size: 0.9rem;
+  color: #355;
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 18px 22px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(3px);
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.info-block p + p {
+  margin-top: 6px;
+}
+
+/* ---------- Modal Base (if reused on landing) ---------- */
+.modal {
+  font-family: inherit;
+}
+
+/* ---------- Utility Classes ---------- */
+.text-center {
+  text-align: center;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  border: 0 !important;
+}
+
+/* ---------- Responsive Adjustments ---------- */
+@media (max-width: 720px) {
+  h2 {
+    font-size: 40px;
+    margin-bottom: 42px;
+  }
+  .main-content {
+    padding: 48px 28px 60px;
+  }
+  .info-block {
+    padding: 16px 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  h2 {
+    font-size: 34px;
+    margin-bottom: 36px;
+  }
+  button,
+  .role-btn {
+    width: 100%;
+    max-width: 320px;
+  }
+  .role-buttons {
+    width: 100%;
+  }
+  .main-content {
+    padding: 40px 20px 56px;
+  }
+  .info-block {
+    font-size: 0.85rem;
+  }
+}
+
+/* ---------- High Contrast Mode (forced-colors) ---------- */
+@media (forced-colors: active) {
+  button,
+  .role-btn {
+    border: 1px solid ButtonText;
+    box-shadow: none;
+  }
+  button:focus-visible,
+  .role-btn:focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
+
+/* End of index.css */
